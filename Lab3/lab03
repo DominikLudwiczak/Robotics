@@ -1,0 +1,7 @@
+1. --clock option is needed, because it publish simulated time synchronized to the messeges in the bag file to the topic, thanks that other nodes can be runned at the same time as they were originally runned
+2. 10376 scans
+3. /turtle# /pose
+4. Around 62 FPS
+5. rosservice call /hector_pasue true
+   rosservice call /hector_pasue false
+6. 2048
