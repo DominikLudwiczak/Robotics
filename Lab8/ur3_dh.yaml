@@ -1,0 +1,36 @@
+### [TODO FK]: load dh parameters
+### * reference for the UR3: https://www.universal-robots.com/articles/ur/application-installation/dh-parameters-for-calculations-of-kinematics-and-dynamics/
+### * theta -> rotation around the Z-axis
+### * a -> translation along the X-axis
+### * d -> translation along the Z-axis
+### * alpha -> rotation around the X-axis
+joint0:
+  theta: 0
+  a: 0
+  d: 0.1519
+  alpha: 1.57079632679
+joint1:
+  theta: 0
+  a: -0.24365
+  d: 0
+  alpha: 0
+joint2:
+  theta: 0
+  a: -0.21325
+  d: 0
+  alpha: 0
+joint3:
+  theta: 0
+  a: 0
+  d: 0.11235
+  alpha: 1.57079632679
+joint4:
+  theta: 0
+  a: 0
+  d: 0.08535
+  alpha: -1.57079632679
+joint5:
+  theta: 0
+  a: 0
+  d: 0.0819
+  alpha: 0
