@@ -1,0 +1,3 @@
+A -> /calib/basler_left/image_raw -> pinhole-equi
+B -> /calib/realsense/image_raw -> omni-radtan
+C -> /calib/basler_right/image_raw -> pinhole-equi

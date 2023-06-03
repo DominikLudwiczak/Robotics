@@ -1,14 +1,35 @@
 import rospy
 import tf
 import yaml
+import math
+import numpy as np
 from geometry_msgs.msg import Point, Quaternion, Vector3
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from std_msgs.msg import ColorRGBA
 from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, Marker
+from .utilities import create_joint_state_msg, create_kinematic_model, get_transform
 from sensor_msgs.msg import JointState
 
-from .utilities import create_joint_state_msg, create_kinematic_model, get_transform
+# def rotation_x(theta):
+#     return np.array([
+#         [1, 0, 0, 0],
+#         [0, np.cos(theta), -np.sin(theta), 0],
+#         [0, np.sin(theta), np.cos(theta), 0],
+#         [0, 0, 0, 1]
+#     ])
 
+# def rotation_z(theta):
+#     return np.array([
+#         [np.cos(theta), -np.sin(theta), 0, 0],
+#         [np.sin(theta), np.cos(theta), 0, 0],
+#         [0, 0, 1, 0],
+#         [0, 0, 0, 1]
+#     ])
+  
+# def translation_xyz(x, y, z):
+#     arr = np.eye(4)
+#     arr[:-1, -1] = [x, y, z]
+#     return arr
 
 class KinematicsManager:
 
@@ -16,16 +37,9 @@ class KinematicsManager:
     def calculate_inv_kin(self, msg):
         if self.mode == Modes.INVERSE_KIN:
             ### write your own inverse kinematics equations
-            Robot = create_kinematic_model(self.dh)
-            
-            pose = tf.transformations.quaternion_matrix([msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w])
-            pose[0, 3] = msg.pose.position.x*1000
-            pose[1, 3] = msg.pose.position.y*1000
-            pose[2, 3] = msg.pose.position.z*1000
-
-            thetas = Robot.ik(pose)
+            thetas = ...
             ###
-            
+
             if thetas is not None and None not in thetas:
                 j_msg = create_joint_state_msg(thetas)
                 self.inv_kin_joints_pub.publish(j_msg)
@@ -36,9 +50,26 @@ class KinematicsManager:
     def calculate_fwd_kin(self, msg):
         if self.mode == Modes.FODWARD_KIN:
             ### write your own forward kinematics equations
-            coordinates = ...
-            ###
+            coordinates = np.identity(4)
+            for i in range(len(msg.position)):
+                joint = self.dh[f"joint{i}"]
+                theta = msg.position[i]
+                # matrix = (
+                #     rotation_z(theta) @
+                #     translation_xyz(0, 0, joint["d"]) @
+                #     translation_xyz(joint["a"], 0, 0) @
+                #     rotation_x(joint["alpha"])
+                # )
+                matrix = np.array([[math.cos(theta), (-1)*math.sin(theta)*math.cos(joint["alpha"]), math.sin(theta)*math.sin(joint["alpha"]), joint["a"]*math.cos(theta)],
+                [math.sin(theta), math.cos(theta)*math.sin(joint["alpha"]), (-1)*math.cos(theta)*math.sin(joint["alpha"]), joint["a"]*math.sin(theta)],
+                [0, math.sin(joint["alpha"]), math.cos(joint["alpha"]), joint["d"]],
+                [0, 0, 0, 1]])
+                coordinates = coordinates @ matrix
 
+            position = np.transpose(coordinates[:-1, -1])
+            orientation = tf.transformations.quaternion_from_matrix(coordinates)
+            coordinates = np.concatenate((position, orientation))
+            ###
             if None not in coordinates:
                 self.create_non_interactive_marker(coordinates)
             else:
@@ -77,15 +108,15 @@ class KinematicsManager:
             self.create_interactive_marker()
 
             ### [TODO IK]: write a publisher for joint states that takes self.joint_state_topic topic and publishers JointState messages
-            self.inv_kin_joints_pub = rospy.publisher(self.joint_state_topic, JointState, queue_size=10)
+            self.inv_kin_joints_pub = ...
 
         elif self.mode == Modes.FODWARD_KIN:
 
             ### [TODO FK]: write:
             ### * a publisher that publishers a Marker message type on the self.pose_state_topic topic
             ### * a Subscriber that takes JointState message type from the self.robot_joints topic and sets the method self.calculate_fwd_kin as a callback
-            self.fwd_kin_marker_pub = ...
-            self.fwd_kin_marker_sub = ...
+            self.fwd_kin_marker_pub = rospy.Publisher(self.pose_state_topic, Marker, queue_size=1)
+            self.fwd_kin_marker_sub = rospy.Subscriber(self.robot_joints, JointState, self.calculate_fwd_kin)
             self.create_non_interactive_marker([1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0])
         else:
             rospy.logerr("Unknown mode param. Not initialized. ")
